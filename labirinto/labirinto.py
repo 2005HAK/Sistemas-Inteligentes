@@ -1,12 +1,13 @@
 import numpy as np
+import random
 
 class Labirinto:
-	def __init__(self, width=10, height=10):
+	def __init__(self, n=10):
 		self.mapa = None
 		self.initial_position = (0, 0)
 		self.posicao_atual = self.initial_position
-		self.final_position = (width - 1, height - 1)
-		self.generate_map(width, height)
+		self.final_position = (random.randint(0, n - 1), random.randint(0, n - 1))
+		self.generate_map(n, n)
 
 	def generate_map(self, width, height):
 		self.mapa = np.zeros((width, height))

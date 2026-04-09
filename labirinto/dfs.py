@@ -1,12 +1,13 @@
 class dfs:
-	def __init__(self, labirinto):
+	def __init__(self, labirinto, visualizator):
 		self.labirinto = labirinto
+		self.vz = visualizator
 		self.visitados = []
 		self.caminho = []
 
 	def find_path(self):
 		start = self.labirinto.initial_position
-		end = self.labirinto.final_position
+		end = None
 
 		pilha = [start]
 		parent = {start: None}
@@ -17,7 +18,8 @@ class dfs:
 		while pilha:
 			atual = pilha[-1]
 
-			if atual == end:
+			if self.labirinto.mapa[atual[0], atual[1]] == 3:
+				end = atual
 				found = True
 				break
 			
@@ -42,6 +44,8 @@ class dfs:
 			else:
 				self.visitados.append(atual)
 				pilha.pop()
+
+			self.vz.draw(self.caminho, self.visitados)
 
 		if found:
 			passo = end
