@@ -10,14 +10,15 @@ COR_ROTA = (255, 255, 0)
 COR_VISITADOS = (50, 50, 150)
 
 class VisualizadorLabirinto:
-	def __init__(self, labirinto, tile_size=40):
+	def __init__(self, labirinto, tile_size=20):
 		pygame.init()
+
 		self.lab = labirinto
 		self.tile_size = tile_size
 
 		self.width = len(labirinto.mapa[0]) * tile_size
 		self.height = len(labirinto.mapa) * tile_size
-		self.screen = pygame.display.set_mode((self.width, self.height))
+		self.screen = pygame.display.set_mode((self.width, self.height), pygame.SHOWN)
 		pygame.display.set_caption("Labirinto")
 
 	def draw(self, caminho=[], visitados=[]):

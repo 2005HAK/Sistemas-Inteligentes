@@ -1,12 +1,13 @@
 class bfs:
-	def __init__(self, labirinto):
+	def __init__(self, labirinto, visualizator):
 		self.labirinto = labirinto
+		self.vz = visualizator
 		self.visitados = []
 		self.caminho = []
 
 	def find_path(self):
 		start = self.labirinto.initial_position
-		end = self.labirinto.final_position
+		end = None
 
 		fila = [start]
 		parent = {start: None}
@@ -17,7 +18,8 @@ class bfs:
 		while fila:
 			atual = fila.pop(0)
 
-			if atual == end:
+			if self.labirinto.mapa[atual[0], atual[1]] == 3:
+				end = atual
 				found = True
 				break
 
@@ -28,6 +30,7 @@ class bfs:
 					fila.append(proxima_pos)
 					parent[proxima_pos] = atual
 					self.visitados.append(proxima_pos)
+					self.vz.draw(self.caminho, self.visitados)
 
 		if found:
 			passo = end
