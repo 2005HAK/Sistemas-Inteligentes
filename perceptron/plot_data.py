@@ -4,54 +4,42 @@ import numpy as np
 import glob
 import os
 
-# ==========================================
-# 1. CARREGAR DATASET
-# ==========================================
-arquivo_dataset = 'iris/bezdekIris.txt'
+arquivo_dataset = '2ddatabase.txt'
 x_class_0, y_class_0, x_class_1, y_class_1 = [], [], [], []
 
 with open(arquivo_dataset, 'r') as file:
-    for linha in file:
-        linha = linha.strip()
-        if not linha: continue
-        partes = linha.split(',')
-        x, y, classe = float(partes[2]), float(partes[3]), int(partes[4])
-        if classe == 0:
-            x_class_0.append(x); y_class_0.append(y)
-        else:
-            x_class_1.append(x); y_class_1.append(y)
+	for linha in file:
+		linha = linha.strip()
+		if not linha: continue
+		partes = linha.split(',')
+		x, y, classe = float(partes[0]), float(partes[1]), int(partes[2])
+		if classe == 0:
+			x_class_0.append(x); y_class_0.append(y)
+		else:
+			x_class_1.append(x); y_class_1.append(y)
 
-# ==========================================
-# 2. CARREGAR PESOS DE TODAS AS EPOCHS
-# ==========================================
 pasta_epochs = 'epochs'
-# Pega todos os arquivos e ordena pelo NÚMERO (evita que epoch_10 venha antes de epoch_2)
 arquivos = glob.glob(os.path.join(pasta_epochs, 'epoch_*.txt'))
 arquivos = sorted(arquivos, key=lambda x: int(os.path.basename(x).replace('epoch_', '').replace('.txt', '')))
 
 historico_pesos = []
 for arq in arquivos:
-    with open(arq, 'r') as file:
-        pesos = file.readline().split()
-        if len(pesos) >= 2:
-            w1, w2 = float(pesos[0]), float(pesos[1])
-            bias = float(pesos[4]) if len(pesos) >= 5 else 0.0
-            historico_pesos.append((w1, w2, bias))
+	with open(arq, 'r') as file:
+		pesos = file.readline().split()
+		if len(pesos) >= 2:
+			w1, w2 = float(pesos[0]), float(pesos[1])
+			bias = float(pesos[2]) if len(pesos) >= 3 else 0.0
+			historico_pesos.append((w1, w2, bias))
 
 if not historico_pesos:
-    print("Nenhum arquivo de epoch encontrado!")
-    exit()
+	print("Nenhum arquivo de epoch encontrado!")
+	exit()
 
-# ==========================================
-# 3. PREPARAR A ANIMAÇÃO
-# ==========================================
 fig, ax = plt.subplots(figsize=(8, 6))
 
-# Plota os dados fixos
 ax.scatter(x_class_0, y_class_0, color='blue', label='Classe 0', marker='o', s=100, edgecolors='black')
 ax.scatter(x_class_1, y_class_1, color='red', label='Classe 1', marker='s', s=100, edgecolors='black')
 
-# Cria a linha que será animada (começa vazia)
 linha_decisao, = ax.plot([], [], color='green', linewidth=3, linestyle='--', label='Fronteira')
 texto_epoch = ax.text(0.05, 0.95, '', transform=ax.transAxes, fontsize=14, verticalalignment='top', bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
 
@@ -61,22 +49,19 @@ ax.set_title('Treinamento do Perceptron', fontsize=14)
 ax.legend(loc='lower right')
 ax.grid(True, linestyle=':', alpha=0.7)
 
-# Função que atualiza o frame do vídeo
 def atualizar(frame):
-    w1, w2, bias = historico_pesos[frame]
-    x_reta = np.array([-2, 12])
-    
-    if w2 != 0:
-        y_reta = -(w1 / w2) * x_reta - (bias / w2)
-        linha_decisao.set_data(x_reta, y_reta)
-    elif w1 != 0:
-        # Linha vertical
-        linha_decisao.set_data([-bias/w1, -bias/w1], [-2, 12])
-        
-    texto_epoch.set_text(f'Epoch: {frame}\nw1: {w1:.2f}\nw2: {w2:.2f}\nbias: {bias:.2f}')
-    return linha_decisao, texto_epoch
+	w1, w2, bias = historico_pesos[frame]
+	x_reta = np.array([-2, 12])
 
-# Cria a animação (interval=200 significa 200 milissegundos por frame)
+	if w2 != 0:
+		y_reta = -(w1 / w2) * x_reta - (bias / w2)
+		linha_decisao.set_data(x_reta, y_reta)
+	elif w1 != 0:
+		linha_decisao.set_data([-bias/w1, -bias/w1], [-2, 12])
+
+	texto_epoch.set_text(f'Epoch: {frame}\nw1: {w1:.2f}\nw2: {w2:.2f}\nbias: {bias:.2f}')
+	return linha_decisao, texto_epoch
+
 anim = FuncAnimation(fig, atualizar, frames=len(historico_pesos), interval=200, blit=True, repeat=False)
 
 plt.show()

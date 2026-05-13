@@ -1,16 +1,17 @@
+
 #include "net.hpp"
 
 std::string presetPath = "";
-std::string dataPath = "iris/bezdekIris.txt";
+std::string dataPath = "2ddatabase.txt";
 
 int main(){
-	Perceptron p(1, 0.5, 100);
+	Perceptron p(1, 0.5, 5);
+
+	//load_preset("epochs/epoch_5.txt");
 
 	p.train(dataPath);
 
-	//for(uint16_t i = 0; i < inputs.size(); i++) p.train(inputs[i], wished_outputs[i]);
-
-	p.predict({1.2247,8.7779,-2.2135,-0.80647});
+	//std::cout << "Predicted output: " << (int)(p.predict({2.8, 1.9}))[0] << std::endl;
 
 	return 0;
 }
