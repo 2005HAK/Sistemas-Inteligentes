@@ -221,29 +221,30 @@ void perceptronDivisionDataSet(Perceptron *p, double ***inputs, uint8_t ***wishe
 	}
 
 	if(show == 1){
-		FILE *trainFile = fopen("train_data.txt", "w"), *testFile = fopen("test_data.txt", "w");
+		FILE *trainFile = fopen("data/train_data.txt", "w"), *testFile = fopen("data/test_data.txt", "w");
 
 		for(uint32_t i = 0; i < indexTrain; i++){
 			for(uint32_t j = 0; j < p->inputSize; j++){
-				fprintf(trainFile, "%.2f ", (*inputs)[(*trainIndexes)[i]][j]);
-				fprintf(trainFile, j < p->inputSize - 1 ? "," : "; ");
+				fprintf(trainFile, "%.2f", (*inputs)[(*trainIndexes)[i]][j]);
+				fprintf(trainFile, j < p->inputSize - 1 ? "," : ";");
 			}
 			for(uint32_t j = 0; j < p->qtdNeurons; j++){
-				fprintf(trainFile, "%d ", (*wishedOutputs)[(*trainIndexes)[i]][j]);
-				fprintf(trainFile, j < p->qtdNeurons - 1 ? "," : ";");
+				fprintf(trainFile, "%d", (*wishedOutputs)[(*trainIndexes)[i]][j]);
+				fprintf(trainFile, j < p->qtdNeurons - 1 ? "," : "");
 			}
 			fprintf(trainFile, "\n");
 		}
 
 		for(uint32_t i = 0; i < indexTest; i++){
 			for(uint32_t j = 0; j < p->inputSize; j++){
-				fprintf(testFile, "%.2f ", (*inputs)[(*testIndexes)[i]][j]);
-				fprintf(testFile, j < p->inputSize - 1 ? "," : "; ");
+				fprintf(testFile, "%.2f", (*inputs)[(*testIndexes)[i]][j]);
+				fprintf(testFile, j < p->inputSize - 1 ? "," : ";");
 			}
 			for(uint32_t j = 0; j < p->qtdNeurons; j++){
-				fprintf(testFile, "%d ", (*wishedOutputs)[(*testIndexes)[i]][j]);
-				fprintf(testFile, j < p->qtdNeurons - 1 ? "," : ";\n");
+				fprintf(testFile, "%d", (*wishedOutputs)[(*testIndexes)[i]][j]);
+				fprintf(testFile, j < p->qtdNeurons - 1 ? "," : "");
 			}
+			fprintf(testFile, "\n");
 		}
 
 		fclose(trainFile);
@@ -300,7 +301,7 @@ void perceptronTrain(Perceptron *p, const char *path){
 
 	uint32_t *trainIndexes = NULL, *testIndexes = NULL;
 
-	perceptronDivisionDataSet(p, &inputs, &wishedOutputs, &trainIndexes, &testIndexes, &countClasses, &dataSize, 0);
+	perceptronDivisionDataSet(p, &inputs, &wishedOutputs, &trainIndexes, &testIndexes, &countClasses, &dataSize, 1);
 
 	uint32_t trainSizePerClass = (dataSize / countClasses) * (2.0 / 3.0);
 	uint32_t totalTrainSize = trainSizePerClass * countClasses;
@@ -331,7 +332,7 @@ void perceptronTrain(Perceptron *p, const char *path){
 					fprintf(epochFile, "%.2f ", p->neurons[i].weights[j]);
 				}
 				fprintf(epochFile, "%.2f\n", p->neurons[i].bias);
-				fprintf(epochFile, "%.2f %d\n", accuracy, epochs);
+				fprintf(epochFile, "%.2f\n", accuracy);
 				fprintf(stderr, "Epoch: %d - Accuracy: %.2f%% (%d samples)\n", epochs, accuracy * 100, totalTestSize);
 			}
 			fclose(epochFile);

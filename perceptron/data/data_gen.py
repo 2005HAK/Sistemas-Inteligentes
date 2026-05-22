@@ -1,6 +1,6 @@
 import random
 
-qtd_points_per_class = 1000000 
+qtd_points_per_class = 100 
 file_name = 'data/2ddatabase.txt'
 
 print(f"Generating {qtd_points_per_class * 2} points...")
