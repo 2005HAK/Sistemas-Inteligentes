@@ -1,16 +1,16 @@
 #include "net.h"
 
 char presetPath[] = "";
-char dataPath[] = "2ddatabase.txt";
+char dataPath[] = "data/2ddatabase.txt";
+//char dataPath[] = "data/iris.data";
 
 int main(){
-	Perceptron p;
-	perceptronInit(&p, 1, 0.5, 5);
+	srand(time(NULL));
 
-	//load_preset("epochs/epoch_5.txt");
+	Perceptron p;
+	perceptronInit(&p, 1, 0.65, 10);
 
 	perceptronTrain(&p, dataPath);
-	//std::cout << "Predicted output: " << (int)(p.predict({2.8, 1.9}))[0] << std::endl;
 
 	return 0;
 }

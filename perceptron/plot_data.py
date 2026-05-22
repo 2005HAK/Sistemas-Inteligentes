@@ -4,8 +4,9 @@ import numpy as np
 import glob
 import os
 
-arquivo_dataset = '2ddatabase.txt'
+arquivo_dataset = 'data/2ddatabase.txt'
 x_class_0, y_class_0, x_class_1, y_class_1 = [], [], [], []
+accuracy_history, epochs_history = [], []
 
 with open(arquivo_dataset, 'r') as file:
 	for linha in file:
@@ -30,10 +31,24 @@ for arq in arquivos:
 			w1, w2 = float(pesos[0]), float(pesos[1])
 			bias = float(pesos[2]) if len(pesos) >= 3 else 0.0
 			historico_pesos.append((w1, w2, bias))
+		performance = file.readline().split()
+		accuracy_history.append(float(performance[0]))
+		epochs_history.append(int(performance[1]))
 
 if not historico_pesos:
 	print("Nenhum arquivo de epoch encontrado!")
 	exit()
+
+figure, ax1 = plt.subplots(figsize=(8, 6))
+
+ax1.scatter(epochs_history, accuracy_history, color='purple', label='Acurácia', marker='o', s=100, edgecolors='black')
+ax1.set_title('Acurácia por Época', fontsize=14)
+ax1.set_xlabel('Época', fontsize=12)
+ax1.set_ylabel('Acurácia', fontsize=12)
+ax1.set_xlim(0, max(epochs_history) + 1)
+ax1.set_ylim(0, 1.05)
+ax1.grid(True, linestyle=':', alpha=0.7)
+ax1.legend(loc='lower right')
 
 fig, ax = plt.subplots(figsize=(8, 6))
 

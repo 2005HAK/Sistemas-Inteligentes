@@ -145,6 +145,12 @@ uint32_t perceptronGetDataFromFile(Perceptron *p, double ***inputs, uint8_t ***w
 
 			token = strtok(NULL, ",");
 		} while(token);
+
+		if(inputCount <= 1) {
+			if(values) free(values);
+			dataCount--;
+			continue;
+		}
 		
 		if(values){
 			uint32_t classValue = (uint32_t)values[inputCount - 1];
@@ -209,6 +215,7 @@ void perceptronDivisionDataSet(Perceptron *p, double ***inputs, uint8_t ***wishe
 			countTest = 0;
 			*trainIndexes = (uint32_t*)realloc(*trainIndexes, (indexTrain + 1) * sizeof(uint32_t));
 			(*trainIndexes)[indexTrain] = i;
+			countTrain++;
 			indexTrain++;
 		}
 	}
@@ -295,6 +302,10 @@ void perceptronTrain(Perceptron *p, const char *path){
 
 	perceptronDivisionDataSet(p, &inputs, &wishedOutputs, &trainIndexes, &testIndexes, &countClasses, &dataSize, 0);
 
+	uint32_t trainSizePerClass = (dataSize / countClasses) * (2.0 / 3.0);
+	uint32_t totalTrainSize = trainSizePerClass * countClasses;
+	uint32_t totalTestSize = dataSize - totalTrainSize;
+
 	mkdir(folderEpochs, 0755);
 
 	while(epochs < p->maxEpochs){
@@ -305,11 +316,11 @@ void perceptronTrain(Perceptron *p, const char *path){
 
 		epochs++;
 
-		shuffleIndexes(trainIndexes, dataSize * (2.0 / 3.0));
+		shuffleIndexes(trainIndexes, totalTrainSize);
 
-		for(uint32_t i = 0; i < dataSize * (2.0 / 3.0); i++) for(uint32_t j = 0; j < p->qtdNeurons; j++) neuronRun(&p->neurons[j], inputs[trainIndexes[i]], wishedOutputs[trainIndexes[i]][j]);
+		for(uint32_t i = 0; i < totalTrainSize; i++) for(uint32_t j = 0; j < p->qtdNeurons; j++) neuronRun(&p->neurons[j], inputs[trainIndexes[i]], wishedOutputs[trainIndexes[i]][j]);
 
-		double accuracy = perceptronNetTest(p, &inputs, &wishedOutputs, testIndexes, dataSize * (1.0 / 3.0));
+		double accuracy = perceptronNetTest(p, &inputs, &wishedOutputs, testIndexes, totalTestSize);
 
 		char epochFilename[256];
 		snprintf(epochFilename, sizeof(epochFilename), "%s/epoch_%d.txt", folderEpochs, epochs);
@@ -320,7 +331,8 @@ void perceptronTrain(Perceptron *p, const char *path){
 					fprintf(epochFile, "%.2f ", p->neurons[i].weights[j]);
 				}
 				fprintf(epochFile, "%.2f\n", p->neurons[i].bias);
-				fprintf(stderr, "Epoch: %d - Accuracy: %.2f%% (%d samples)\n", epochs, accuracy * 100, (int)(dataSize * (1.0 / 3.0)));
+				fprintf(epochFile, "%.2f %d\n", accuracy, epochs);
+				fprintf(stderr, "Epoch: %d - Accuracy: %.2f%% (%d samples)\n", epochs, accuracy * 100, totalTestSize);
 			}
 			fclose(epochFile);
 		}
