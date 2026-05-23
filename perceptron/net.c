@@ -1,5 +1,6 @@
 #include "net.h"
 
+// Path to save the epochs generated during training
 char folderEpochs[] = "epochs";
 
 // Neuron functions
@@ -192,7 +193,7 @@ uint32_t perceptronGetDataFromFile(Perceptron *p, double ***inputs, uint8_t ***w
 	free(uniqueClasses);
 
 	*dataSize = dataCount;
-	return inputCount - 1;
+	return inputCount > 0 ? inputCount - 1 : 0;
 }
 
 void perceptronDivisionDataSet(Perceptron *p, double ***inputs, uint8_t ***wishedOutputs, uint32_t **trainIndexes, uint32_t **testIndexes, uint32_t *countClasses, uint32_t *dataSize, uint8_t show){
@@ -382,8 +383,9 @@ void perceptronFree(Perceptron *p){
 	p->qtdNeurons = 0;
 }
 
-
 // End perceptron functions
+
+// Utility functions
 
 void shuffleIndexes(uint32_t *indexes, uint32_t size){
 	if (size <= 1) return;
@@ -394,3 +396,5 @@ void shuffleIndexes(uint32_t *indexes, uint32_t size){
 		indexes[j] = temp;
 	}
 }
+
+// End utility functions
