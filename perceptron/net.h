@@ -1,6 +1,15 @@
 #ifndef NET_H
 #define NET_H
 
+/**
+ * References:
+ * 
+ * - https://www.ibm.com/docs/pt-br/i/7.5.0?topic=functions-strtok-tokenize-string
+ * - https://www.w3schools.com/c/c_strings.php
+ * - https://www.inf.pucrs.br/~pinho/LaproI/Vetores/Vetores.htm
+ * - https://archive.ics.uci.edu/dataset/53/iris
+ */
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
