@@ -1,7 +1,7 @@
 # Fdb version 4
-["pdflatex"] 1779482915.92578 "/media/hak/HD1TB/Documentos/Hebert_Alan_Kubis/Repositorios/UFSC/sistemas_inteligentes/perceptron/doc/perceptron.tex" "perceptron.pdf" "perceptron" 1779482916.21814 0
+["pdflatex"] 1779641865.19954 "/media/hak/HD1TB/Documentos/Hebert_Alan_Kubis/Repositorios/UFSC/sistemas_inteligentes/perceptron/doc/perceptron.tex" "perceptron.pdf" "perceptron" 1779641865.47168 0
   "/etc/texmf/web2c/texmf.cnf" 1765492615.82701 475 c0e671620eb5563b2130f56340a5fde8 ""
-  "/media/hak/HD1TB/Documentos/Hebert_Alan_Kubis/Repositorios/UFSC/sistemas_inteligentes/perceptron/doc/perceptron.tex" 1779482915.87236 9157 95f5a1e68bf055214d40a79260eb6df9 ""
+  "/media/hak/HD1TB/Documentos/Hebert_Alan_Kubis/Repositorios/UFSC/sistemas_inteligentes/perceptron/doc/perceptron.tex" 1779641864.70647 9155 c87c2ccb3c570286f9acbb1fbf1aaf00 ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/adobe/courier/pcrr7t.tfm" 1136768653 960 379cc0019370a9e0208a0a3f949f847a ""
@@ -85,8 +85,8 @@
   "img/matriz de confusao 2d ls.png" 1779476581.47249 15891 3e420d4eb982fe94e7402b80724648ad ""
   "img/matriz de confusao iris.png" 1779478968.8342 15891 d5892daa735a43641161fcde864fd56e ""
   "img/perceptron treinado 2d ls.png" 1779476538.29669 72618 6aa6078beb405e9a28437bdef6a35eb7 ""
-  "perceptron.aux" 1779482916.18436 2684 b044c2d91928e7e46eedb8e6887cc3d8 "pdflatex"
-  "perceptron.tex" 1779482915.87236 9157 95f5a1e68bf055214d40a79260eb6df9 ""
+  "perceptron.aux" 1779641865.43847 2682 aaa99936d228068e195a75afe86bbfa1 "pdflatex"
+  "perceptron.tex" 1779641864.70647 9155 c87c2ccb3c570286f9acbb1fbf1aaf00 ""
   (generated)
   "perceptron.aux"
   "perceptron.log"
