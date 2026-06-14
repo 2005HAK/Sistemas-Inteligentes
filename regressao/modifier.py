@@ -1,184 +1,214 @@
 import pandas as pd
 import numpy as np
 
-data = pd.read_csv("data/train_mod.csv", delimiter=",")
+def modifier_data(file, train = True):
+	data = pd.read_csv(f"data/{file}.csv", delimiter=",")
 
-len_init = len(data)
-# ------------ Modificações preço --------------- #
+	len_init = len(data)
+	print(len(data))
 
-data = data.dropna(subset=["Preco"])
-print(len(data))
+	# ------------ Modificações preço --------------- #
 
-print(f"{((len_init - len(data)) / len_init) * 100} % da base excluido por falta do preço")
+	teto = data["Preco"].quantile(0.99)
+	data = data.dropna(subset=["Preco"])
+	data = data[data["Preco"] >= 1000]
+	data = data[data["Preco"] <= teto]
 
-# ------------ Fim modificação preço ------------- #
+	print(f"{((len_init - len(data)) / len_init) * 100} % da base excluido por falta do preço")
 
-print(data["Classificacao_Veiculo"].unique())
+	# ------------ Fim modificação preço ------------- #
 
-data["Classificacao_Veiculo"] = data["Classificacao_Veiculo"].astype(str).str.strip().str.lower()
-data["Classificacao_Veiculo"] = (data["Classificacao_Veiculo"] == "semi-novo").astype(int)
+	# ------------ Modificação classificação ------------ #
 
-print(data["Couro"].unique())
+	print(data["Classificacao_Veiculo"].unique())
 
-data["Couro"] = data["Couro"].astype(str).str.strip().str.lower()
-data["Couro"] = (data["Couro"] == "sim").astype(int)
+	data["Classificacao_Veiculo"] = data["Classificacao_Veiculo"].astype(str).str.strip().str.lower()
+	data["Classificacao_Veiculo"] = (data["Classificacao_Veiculo"] == "semi-novo").astype(int)
 
-print(data["Adesivos_personalizados"].unique())
+	# ------------- Fim modificação classificação -------------- #
 
-data["Adesivos_personalizados"] = data["Adesivos_personalizados"].astype(str).str.strip().str.lower()
-data["Adesivos_personalizados"] = (data["Adesivos_personalizados"] == "sim").astype(int)
+	# -------------- Modificação couro ------------------- #
 
-# ---------- Modificação dos dados dos combustiveis ----------- #
+	print(data["Couro"].unique())
 
-print(data["Combustivel"].unique())
+	data["Couro"] = data["Couro"].astype(str).str.strip().str.lower()
+	data["Couro"] = (data["Couro"] == "sim").astype(int)
 
-data["Combustivel"] = data["Combustivel"].astype(str).str.strip().str.lower()
-data["Combustivel"] = data["Combustivel"].replace({"gasol.": "gasolina", "dies.": "diesel"})
+	# --------------- Fim modificação couro --------------- #
 
-print(data["Combustivel"].unique())
-data = pd.get_dummies(data, columns=["Combustivel"], drop_first=True, dtype=int)
+	# ---------------- Modificaçao adesivos ------------- #
 
-# -------- Fim modificação dos dados dos combustiveis --------- #
+	print(data["Adesivos_personalizados"].unique())
 
-# ---------- Remoção da coluna Faixa de preço ------------ #
+	data["Adesivos_personalizados"] = data["Adesivos_personalizados"].astype(str).str.strip().str.lower()
+	data["Adesivos_personalizados"] = (data["Adesivos_personalizados"] == "sim").astype(int)
 
-data= data.drop(columns=["Faixa_Preco"])
+	# ----------------- Fim modificação adesivos -------------------- #
 
-# -------- Fim remoção da coluna Faixa de preço ---------- #
+	# ---------- Modificação dos dados dos combustiveis ----------- #
 
-# -------- Modificação nas categorias ------------- #
+	print(data["Combustivel"].unique())
 
-print(data["Categoria"].unique())
+	data["Combustivel"] = data["Combustivel"].astype(str).str.strip().str.lower()
+	data["Combustivel"] = data["Combustivel"].replace({"gasol.": "gasolina", "dies.": "diesel"})
 
-data["Categoria"] = data["Categoria"].astype(str).str.strip().str.lower()
-data = pd.get_dummies(data, columns=["Categoria"], drop_first=True, dtype=int)
+	print(data["Combustivel"].unique())
+	data = pd.get_dummies(data, columns=["Combustivel"], drop_first=True, dtype=int)
 
-# -------- Fim modificação nas categorias ------------- #
+	# -------- Fim modificação dos dados dos combustiveis --------- #
 
-# -------- Modificação no volume do motor ------------- #
+	# ---------- Remoção da coluna Faixa de preço ------------ #
+	if train:
+		data= data.drop(columns=["Faixa_Preco"])
 
-volume_turbo = data["Volume_motor"].astype(str).str.lower()
+	# -------- Fim remoção da coluna Faixa de preço ---------- #
 
-data["Turbo"] = volume_turbo.str.contains("turbo").astype(int)
-data["Volume_motor"] = volume_turbo.str.replace("turbo", "").str.strip()
-data["Volume_motor"] = data["Volume_motor"].astype(float)
+	# -------- Modificação nas categorias ------------- #
 
-print(data["Volume_motor"].unique())
+	print(data["Categoria"].unique())
 
-quantidade_zeros = len(data[data["Volume_motor"] == 0])
-total_linhas = len(data)
-porcentagem = (quantidade_zeros / total_linhas) * 100
+	data["Categoria"] = data["Categoria"].astype(str).str.strip().str.lower()
+	data = pd.get_dummies(data, columns=["Categoria"], drop_first=True, dtype=int)
 
-print(porcentagem)
+	# -------- Fim modificação nas categorias ------------- #
 
-data = data[data["Volume_motor"] > 0]
+	# -------- Modificação no volume do motor ------------- #
 
-# -------- Fim modificação no volume do motor ------------- #
+	volume_turbo = data["Volume_motor"].astype(str).str.lower()
 
-# -------- Modificação no tipo de cambio ------------- #
+	data["Turbo"] = volume_turbo.str.contains("turbo").astype(int)
+	data["Volume_motor"] = volume_turbo.str.replace("turbo", "").str.strip()
+	data["Volume_motor"] = data["Volume_motor"].astype(float)
 
-print(data["Tipo_cambio"].unique())
+	print(data["Volume_motor"].unique())
 
-data["Tipo_cambio"] = data["Tipo_cambio"].astype(str).str.strip().str.lower()
-data = pd.get_dummies(data, columns=["Tipo_cambio"], drop_first=True, dtype=int)
+	data = data[data["Volume_motor"] > 0]
 
-# -------- Fim modificação no tipo de cambio ------------- #
+	# -------- Fim modificação no volume do motor ------------- #
 
-# -------- Modificações tração ----------------- #
+	# -------- Modificação no tipo de cambio ------------- #
 
-print(data["Tração"].unique())
-data["Tração"] = data["Tração"].astype(str).str.strip().str.lower()
-data = pd.get_dummies(data, columns=["Tração"], drop_first=True, dtype=int)
+	print(data["Tipo_cambio"].unique())
 
-# -------- Fim modificação tração --------------- #
+#	dic_cambio = {
+#		'manual': 0,
+#		'tiptronic': 1,
+#		'automatico': 2,
+#		'variator': 3
+#	}
 
-# -------- Modificações portas -------------- #
+	data["Tipo_cambio"] = data["Tipo_cambio"].astype(str).str.strip().str.lower()
+	data = pd.get_dummies(data, columns=["Tipo_cambio"], drop_first=True, dtype=int)
+#	data["Tipo_cambio"] = data["Tipo_cambio"].map(dic_cambio)
 
-print(data["Portas"].unique())
-data["Portas"] = data["Portas"].astype(str).str.strip().str.lower()
-dicionario_portas = {
-	"2-3": 0,
-	"4-5": 1,
-	">5": 2
-}
+	# -------- Fim modificação no tipo de cambio ------------- #
 
-data["Portas"] = data["Portas"].map(dicionario_portas)
+	# -------- Modificações tração ----------------- #
 
-# -------- Fim modificação portas ------------- #
+	print(data["Tração"].unique())
+	data["Tração"] = data["Tração"].astype(str).str.strip().str.lower()
+	data = pd.get_dummies(data, columns=["Tração"], drop_first=True, dtype=int)
 
-# -------- Modificação modelo ---------------- #
+	# -------- Fim modificação tração --------------- #
 
-print(data["Modelo"].nunique())
+	# -------- Modificações portas -------------- #
 
-data = data.drop(columns=["Modelo"])
+	print(data["Portas"].unique())
+	data["Portas"] = data["Portas"].astype(str).str.strip().str.lower()
+	dicionario_portas = {
+		"2-3": 0,
+		"4-5": 1,
+		">5": 2
+	}
 
-# -------- Fim modificação modelo ------------- #
+	data["Portas"] = data["Portas"].map(dicionario_portas)
 
-# --------- Modificação radio --------------- #
+	# -------- Fim modificação portas ------------- #
 
-data["Radio_AM_FM"] = data["Radio_AM_FM"].astype(str).str.strip().str.lower()
+	# -------- Modificação modelo ---------------- #
 
-data["AM"] = data["Radio_AM_FM"].str.contains("am").astype(int)
+	data = data.drop(columns=["Modelo"])
 
-data["FM"] = data["Radio_AM_FM"].str.contains("fm").astype(int)
+	# -------- Fim modificação modelo ------------- #
 
-data = data.drop(columns=["Radio_AM_FM"])
+	# --------- Modificação radio --------------- #
 
-# ------------- Fim modificação radio ---------------- #
+	data["Radio_AM_FM"] = data["Radio_AM_FM"].astype(str).str.strip().str.lower()
 
-# ------------ Modificacções cor ----------------- #
+	data["AM"] = data["Radio_AM_FM"].str.contains("am").astype(int)
 
-print(data["Cor"].unique())
+	data["FM"] = data["Radio_AM_FM"].str.contains("fm").astype(int)
 
-data["Cor"] = data["Cor"].astype(str).str.strip().str.lower()
-data = pd.get_dummies(data, columns=["Cor"], drop_first=True, dtype=int)
+	data = data.drop(columns=["Radio_AM_FM"])
 
-# ------------ Fim modificações cor ---------------- #
+	# ------------- Fim modificação radio ---------------- #
 
-# ------------ Modificações Km ------------------ #
+	# ------------ Modificacções cor ----------------- #
 
-km_temp = data["Km"].astype(str).str.lower()
-data["Km"] = km_temp.str.replace("km", "").str.strip()
-data["Km"] = pd.to_numeric(data["Km"], errors='coerce')
-data["Km"] = data["Km"].replace(0, np.nan)
-data["Km"] = data["Km"].fillna(data.groupby("Ano")["Km"].transform("median"))
+	print(data["Cor"].unique())
 
-data = data.dropna(subset=["Km"])
+	data["Cor"] = data["Cor"].astype(str).str.strip().str.lower()
+	data["Cor"] = data["Cor"].replace({"red": "vermelho", "azul ceu": "azul"})
+	data = pd.get_dummies(data, columns=["Cor"], drop_first=True, dtype=int)
 
-# --------------- Fim modificações Km ------------------ #
+	# ------------ Fim modificações cor ---------------- #
 
-# --------------- Modificação marcas ------------------ #
+	# ------------ Modificações Km ------------------ #
 
-print(data["Fabricante"].unique())
+	km_temp = data["Km"].astype(str).str.lower()
+	data["Km"] = km_temp.str.replace("km", "").str.strip()
+	data["Km"] = pd.to_numeric(data["Km"], errors='coerce')
+	data["Km"] = data["Km"].replace(0, np.nan)
+	data["Km"] = data["Km"].fillna(data.groupby("Ano")["Km"].transform("median"))
 
-data["Fabricante"] = data["Fabricante"].astype(str).str.strip().str.lower()
-data = pd.get_dummies(data, columns=["Fabricante"], drop_first=True, dtype=int)
+	data = data.dropna(subset=["Km"])
 
-# --------------- Fim modificação marcas -------------------- #
+	# --------------- Fim modificações Km ------------------ #
 
-# --------------- Modificação data da lavagem ----------------- #
+	# --------------- Modificação marcas ------------------ #
 
-data["Data_ultima_lavagem"] = pd.to_datetime(data["Data_ultima_lavagem"], errors="coerce")
-data_mais_recente = data["Data_ultima_lavagem"].max()
-data["Dias_desde_lavagem"] = (data_mais_recente - data["Data_ultima_lavagem"]).dt.days
+	print(data["Fabricante"].unique())
 
-data = data.drop(columns=["Data_ultima_lavagem"])
+	data["Fabricante"] = data["Fabricante"].astype(str).str.strip().str.lower()
+	data = pd.get_dummies(data, columns=["Fabricante"], drop_first=True, dtype=int)
 
-# -------------- Fim modificação data da lavagem ----------------- #
+	# --------------- Fim modificação marcas -------------------- #
 
-# --------------- Modificação debitos ----------------- #
+	# --------------- Modificação data da lavagem ----------------- #
 
-data["Débitos"] = data["Débitos"].replace("-", "0")
-data["Débitos"] = pd.to_numeric(data["Débitos"], errors='coerce')
-data["Débitos"] = data["Débitos"].fillna(0).astype(int)
+	#data["Data_ultima_lavagem"] = pd.to_datetime(data["Data_ultima_lavagem"], errors="coerce")
+	#data_mais_recente = data["Data_ultima_lavagem"].max()
+	#data["Dias_desde_lavagem"] = (data_mais_recente - data["Data_ultima_lavagem"]).dt.days
 
-# -------------- Fim modificação debitos ------------------ #
+	data = data.drop(columns=["Data_ultima_lavagem"])
 
-# -------------- Modificação id e concessionaria -------------- # 
+	# -------------- Fim modificação data da lavagem ----------------- #
 
-data = data.drop(columns=["ID", "Codigo_concessionaria"])
+	# --------------- Modificação debitos ----------------- #
 
-# ----------------- Fim modificação id e concessionaria ------------- #
+	data["Débitos"] = data["Débitos"].replace("-", "0")
+	data["Débitos"] = pd.to_numeric(data["Débitos"], errors='coerce')
+	data["Débitos"] = data["Débitos"].fillna(0).astype(int)
 
-print(f"{((len_init - len(data)) / len_init) * 100} % da base excluida")
-data.to_csv("data/train_mod_tratado.csv", index=False)
+	# -------------- Fim modificação debitos ------------------ #
+
+	# -------------- Modificação id e concessionaria -------------- # 
+
+	data = data.drop(columns=["ID", "Codigo_concessionaria"])
+
+	# ----------------- Fim modificação id e concessionaria ------------- #
+
+	print(f"{((len_init - len(data)) / len_init) * 100} % da base excluida")
+	print(len(data))
+	data.to_csv(f"data/{file}_tratado.csv", index=False)
+
+def analiser(file):
+	data = pd.read_csv(f"data/{file}.csv", delimiter=",")
+
+	print(data.nsmallest(20, "Preco")[["Ano", "Km", "Preco"]])
+	print(data.nlargest(20, "Preco")[["Ano", "Km", "Preco"]])
+
+modifier_data("train_mod")
+modifier_data("test", False)
+
+#analiser("train_mod_tratado")

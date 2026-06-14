@@ -69,6 +69,6 @@ for line in reader:
 	faixa_preco.append(line[25])
 
 fig, ax = plt.subplots()
-ax.scatter(id, deb)
+ax.scatter(id, preco)
 
 plt.show()
