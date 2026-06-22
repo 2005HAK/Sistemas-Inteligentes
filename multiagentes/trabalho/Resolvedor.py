@@ -1,47 +1,58 @@
-import spade
-from spade.agent import Agent
-from spade.behaviour import CyclicBehaviour
-from spade.message import Message
-import asyncio
+import spade # Biblioteca para agentes
+from spade.agent import Agent # Classe base para criar agentes
+from spade.behaviour import CyclicBehaviour # Comportamento cíclico para execução contínua
+from spade.message import Message # Classe para criar mensagens entre agentes
+import asyncio # Biblioteca para operações assíncronas, permitindo que o agente espere por mensagens sem bloquear a execução
 
 
 
+# Agente Resolvedor de Labirinto usando DFS (Depth-First Search)
 class ExploracaoDFSBehaviour(CyclicBehaviour):
+
+
+    # Inicialização do comportamento, definindo variáveis e estruturas de dados necessárias para a exploração do labirinto
     async def on_start(self):
-       
-    
-
-       # IP local do servidor XMPP
-        self.labirinto_jid = "labirinto@192.168.1.74"
-
+        self.labirinto_jid = "mashima_lab_v5@yax.im"
         self.posicao_virtual = (0, 0)
         self.visitados = set([self.posicao_virtual])
         self.caminho_atual = []
         self.caminho_inverso = []
-
-        # Dicionários
         self.opostos = {'D': 'E', 'E': 'D', 'C': 'B', 'B': 'C'}
-        self.deltas = {'D': (1, 0), 'E': (-1, 0), 'C': (0, 1), 'B': (0, -1)}
-
+        self.deltas = {'C': (-1, 0), 'B': (1, 0), 'D': (0, 1), 'E': (0, -1)}
         self.achou_objetivo = False
 
+
+
+    # Método principal do comportamento, executado continuamente enquanto o agente estiver ativo.
+    # Ele é responsável por solicitar os caminhos possíveis, escolher uma direção para se mover, 
+    # enviar a tentativa de movimento e processar a resposta do labirinto, atualizando a posição 
+    # virtual e os caminhos percorridos.
     async def run(self):
         if self.achou_objetivo:
             return
 
+        print(f"\nPosição Virtual: {self.posicao_virtual}")
+        print("Perguntando caminhos possíveis...")
+        
         msg_req = Message(to=self.labirinto_jid)
         msg_req.set_metadata("performative", "request")
         msg_req.body = "precisa direção"
         await self.send(msg_req)
 
-        resp_caminhos = await self.receive(timeout=10)
+        resp_caminhos = None
+        for _ in range(10):
+            msg = await self.receive(timeout=1)
+            if msg and msg.get_metadata("performative") == "inform" and "[" in msg.body:
+                resp_caminhos = msg
+                break
+
         if not resp_caminhos:
-            print("Aguardando...")
-            await asyncio.sleep(2)
+            print("Timeout. Tentando novamente...")
             return
 
-        body = resp_caminhos.body.replace('[', '').replace(']', '').replace("'", "").replace(" ", "")
+        body = str(resp_caminhos.body).replace('[', '').replace(']', '').replace("'", "").replace(" ", "")
         direcoes_recebidas = body.split(',') if body else []
+        print(f"Labirinto respondeu: {direcoes_recebidas}")
 
         direcao_escolhida = None
         is_backtrack = False
@@ -56,24 +67,41 @@ class ExploracaoDFSBehaviour(CyclicBehaviour):
 
         if nao_visitadas:
             direcao_escolhida = nao_visitadas[0]
+            print(f"Novo caminho. Movendo para '{direcao_escolhida}'")
         else:
             if len(self.caminho_inverso) > 0:
-                print("Beco sem saída, voltando...")
-                direcao_escolhida = self.caminho_inverso.pop()
-                self.caminho_atual.pop()
+                direcao_escolhida = self.caminho_inverso[-1]
                 is_backtrack = True
+                print(f"Beco sem saída! voltando '{direcao_escolhida}'")
             else:
-                print("Oxi '-' eae Hebert")
+                print("Labirinto sem saída. Eae Hebert '-'")
                 self.kill()
+                await self.agent.stop()
                 return
 
+        print(f"Enviando tentativa de movimento: {direcao_escolhida}")
         msg_mov = Message(to=self.labirinto_jid)
         msg_mov.set_metadata("performative", "subscribe")
         msg_mov.body = direcao_escolhida
         await self.send(msg_mov)
+        
+        resp_mov = None
+        for _ in range(10):
+            msg = await self.receive(timeout=1)
+            if msg and msg.get_metadata("performative") in ["inform", "inform-done"]:
+                if msg.body.strip() in ["ok", "nok", "ganhou"]:
+                    resp_mov = msg
+                    break
 
-        resp_mov = await self.receive(timeout=10)
-        if resp_mov and resp_mov.body == "ok":
+        if not resp_mov:
+            print("Timeout ao mover...")
+            return
+
+        conteudo = str(resp_mov.body).strip()
+        performative = resp_mov.get_metadata("performative")
+
+        if conteudo in ["ok", "ganhou"]:
+            print("Labirinto confirmou movimento.")
             dx, dy = self.deltas[direcao_escolhida]
             self.posicao_virtual = (self.posicao_virtual[0] + dx, self.posicao_virtual[1] + dy)
             self.visitados.add(self.posicao_virtual)
@@ -81,50 +109,54 @@ class ExploracaoDFSBehaviour(CyclicBehaviour):
             if not is_backtrack:
                 self.caminho_atual.append(direcao_escolhida)
                 self.caminho_inverso.append(self.opostos[direcao_escolhida])
+            else:
+                self.caminho_inverso.pop()
+                self.caminho_atual.pop()
+
+            if performative == "inform-done" or conteudo == "ganhou":
+                print("\n THE ONE PIECE IS REAL! (Objetivo Encontrado)")
+                self.achou_objetivo = True
+                
+                msg_prop = Message(to=self.labirinto_jid)
+                msg_prop.set_metadata("performative", "propose")
+                string_final = "".join(self.caminho_atual)
+                msg_prop.body = string_final
+                
+                print(f"Enviando Caminho Final para validação: {string_final}")
+                await self.send(msg_prop)
+                
+                resp_final = None
+                for _ in range(10):
+                    msg = await self.receive(timeout=1)
+                    if msg and msg.get_metadata("performative") == "accept_propose":
+                        resp_final = msg
+                        break
+                
+                if resp_final:
+                    print("Labirinto aceitou o caminho. Agente desligando!")
+                    self.kill()
+                    await self.agent.stop()
         else:
-            print(f"Erro ao mover para {direcao_escolhida}. Labirinto não enviou 'ok'.")
-            return
-
-        msg_obj = Message(to=self.labirinto_jid)
-        msg_obj.set_metadata("performative", "query_if")
-        msg_obj.body = "objetivo"
-        await self.send(msg_obj)
-
-        resp_obj = await self.receive(timeout=10)
-        if resp_obj and resp_obj.set_metadata("performative") == "inform-done":
-            print("ONE PIECE!")
-            self.achou_objetivo = True
-            
-            msg_prop = Message(to=self.labirinto_jid)
-            msg_prop.set_metadata("performative", "propose")
-            string_final = "".join(self.caminho_atual)
-            msg_prop.body = string_final
-            
-            print(f"Caminho Final: {string_final}")
-            await self.send(msg_prop)
-
-            resp_final = await self.receive(timeout=10)
-            if resp_final and resp_final.set_metadata("performative") == "accept_propose":
-                self.kill()
+            print(f"[ERRO] Movimento recusado. PosVirtual={self.posicao_virtual} Resposta={conteudo}")
 
         await asyncio.sleep(0.5)
 
+
+
+
+# Classe do agente Resolvedor de Labirinto, responsável por iniciar o comportamento de exploração e gerenciar a comunicação com o labirinto.
 class ResolvedorAgent(Agent):
     async def setup(self):
-        print(f"Agente Resolvedor {self.jid} ligado.")
+        print(f"Resolvedor de Labirínto {self.jid} online.")
         self.add_behaviour(ExploracaoDFSBehaviour())
 
 
 
 
+# Função principal para iniciar o agente Resolvedor.
 async def main():
-
-
-    # servidor
-    resolvedor = ResolvedorAgent("resolvedor_teste123@yax.im", "senha_secreta_123")
-    
-    
-    await resolvedor.start(auto_register=True)
+    resolvedor = ResolvedorAgent("mashima_res_v5@yax.im", "senha123", verify_security=False)
+    await resolvedor.start()
     while resolvedor.is_alive():
         try:
             await asyncio.sleep(1)
@@ -134,5 +166,7 @@ async def main():
             break
 
 
+
+# Ponto de entrada do script, iniciando a função principal para criar e executar o agente Resolvedor.
 if __name__ == "__main__":
     asyncio.run(main())
