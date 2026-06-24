@@ -1,32 +1,130 @@
 import spade
 import numpy as np
 import random
+import asyncio
+from spade.template import Template
 
 class LabirintoAgent(spade.agent.Agent):
-	async def setup(self, n=10):
-		print("Labirinto Agent {} is ready.".format(str(self.jid)))
-		self.mapa = None
-		self.initial_position = (random.randint(0, n - 1), random.randint(0, n - 1)) # acho que tem que mudar isso
-		self.posicao_atual = self.initial_position
-		self.final_position = (random.randint(0, n - 1), random.randint(0, n - 1))
-		self.generate_map(n, n)
-		self.show_map()
-		self.add_behaviour(self.RecvMessage())
+	'''
+	Classe do agente labirinto
+	'''
 
-	def generate_map(self, width, height):
+	async def setup(self, n=3):
+		'''
+		Inicializa o objeto labirinto.
+
+		:param n: Tamanho do labirinto (n x n)
+
+		:return: none
+		'''
+
+		print("Labirinto Agent {} logado com sucesso.".format(str(self.jid)))
+		self.mapa = None
+		self.n = n
+
+		print("Gerando labirinto...")
+
+		while True:
+			self.initial_position = (random.randint(0, n - 1), random.randint(0, n - 1))						# Posicao inicial aleatória dentro do labirinto
+			self.final_position = (random.randint(0, n - 1), random.randint(0, n - 1))							# Posicao final aleatória dentro do labirinto
+
+			if self.initial_position == self.final_position: continue											# Gera um novo labirinto se a posicao inicial e final cairem no mesmo lugar
+
+			self.generate_map(n, n, 0.3)																		# Gera o mapa
+
+			if self.tem_solucao(): break																		# Se nao tem solução gera um novo labirinto
+
+		self.posicao_atual = self.initial_position
+		self.show_map()
+
+		t_req = Template()
+		t_req.set_metadata("performative", "request")
+		self.add_behaviour(self.TratarRequest(), t_req)
+
+		t_sub = Template()
+		t_sub.set_metadata("performative", "subscribe")
+		self.add_behaviour(self.TratarSubscribe(), t_sub)
+
+		t_prop = Template()
+		t_prop.set_metadata("performative", "propose")
+		self.add_behaviour(self.TratarPropose(), t_prop)
+
+	def generate_map(self, width, height, k):
+		'''
+		Gera o labirinto com um valor de k% de uma posicao ser uma parede.\n
+		Valores:
+
+		- 0 - Parede\n
+		- 1 - Caminho\n
+		- 2 - Posição inicial\n
+		- 3 - Posição final\n
+
+		:param width: Largura do mapa
+		:type width: int
+
+		:param height: Altura do mapa
+		:type height: int
+
+		:param k: Chance de uma posição do mapa ser uma parede
+		:type k: float [0 à 1]
+
+		:return: none
+		'''
+
 		self.mapa = np.zeros((width, height))
 		for i in range(width):
 			for j in range(height):
-				if (i, j) == self.initial_position:
-					self.mapa[i][j] = 2
-				elif (i, j) == self.final_position:
-					self.mapa[i][j] = 3
-				elif np.random.rand() < 0.3:
-					self.mapa[i][j] = 0
-				else:
-					self.mapa[i][j] = 1
+				if (i, j) == self.initial_position:	self.mapa[i][j] = 2
+				elif (i, j) == self.final_position:	self.mapa[i][j] = 3
+				elif np.random.rand() < k:			self.mapa[i][j] = 0
+				else:								self.mapa[i][j] = 1
+
+	def tem_solucao(self):
+		'''
+		Implementacao de uma busca em profundidade para verificar se e possivel encontrar um caminho para o labirinto
+
+		:return: Booleano que diz se tem solucao ou nao
+		'''
+
+		fronteira = [self.initial_position]
+		visitados = set()
+		visitados.add(self.initial_position)
+
+		while fronteira:
+			estado_atual = fronteira.pop(0)
+
+			if estado_atual == self.final_position:	return True
+
+			for vizinho in self.can_move(estado_atual, is_test=True):
+				if vizinho not in visitados:
+					visitados.add(vizinho)
+					fronteira.append(vizinho)
+		return False
+
+	def can_move(self, current_position, is_test=False):
+		'''
+		Funcao para verificar se pode se mover para algum lugar.
+
+		:param current_position: Posicao atual do resolvedor
+		:type current_position: tuple
+		:param is_test: Flag para retornar ou nao a direcao do movimento
+		:type is_test: bool
+
+		:return can_move_positions: Lista de posicoes que pode se mover. Pode ser com ou sem o identificador de direcao com base no valor de is_test
+		'''
+
+		x, y = current_position
+		new_positions = {"C": (x - 1, y), "B": (x + 1, y), "D": (x, y + 1), "E": (x, y - 1)}
+
+		can_move_positions = []
+		for key, pos in new_positions.items():
+			nx, ny = pos
+			if 0 <= nx < len(self.mapa) and 0 <= ny < len(self.mapa[0]):
+				if self.mapa[nx][ny] in [1, 2, 3]:	can_move_positions.append(pos if is_test else key)
+		return can_move_positions
 
 	def show_map(self):
+		print("\nMAPA INICIAL")
 		for i in range(len(self.mapa)):
 			for j in range(len(self.mapa[0])):
 				if (i, j) == self.initial_position:
@@ -39,34 +137,37 @@ class LabirintoAgent(spade.agent.Agent):
 					print('1', end=' ')
 			print()
 
-	#não sera mais usada
 	def move(self, direcao):
 		x, y = self.posicao_atual
-		if direcao == 'N':
-			nova_posicao = (x - 1, y)
-		elif direcao == 'S':
-			nova_posicao = (x + 1, y)
-		elif direcao == 'L':
-			nova_posicao = (x, y + 1)
-		elif direcao == 'O':
-			nova_posicao = (x, y - 1)
-		else:
-			raise ValueError("Direção inválida. Use 'N', 'S', 'L' ou 'O'.")
+		if direcao == 'C': nova_posicao = (x - 1, y)
+		elif direcao == 'B': nova_posicao = (x + 1, y)
+		elif direcao == 'D': nova_posicao = (x, y + 1)
+		elif direcao == 'E': nova_posicao = (x, y - 1)
+		else: return False
 
-		if self.can_move(nova_posicao):
+		if direcao in self.can_move(self.posicao_atual):
 			self.posicao_atual = nova_posicao
 			return True
 		return False
-	
-	#sera usada, mas precisa ser adaptada (ta recebendo um vetor de posiçoes)
-	def show_path(self, caminho):
+
+	def show_path(self, caminho_string, titulo="CAMINHO FINAL NO MAPA"):
+		caminho_coords = [self.initial_position]
+		x, y = self.initial_position
+		for passo in caminho_string:
+			if passo == 'C': x -= 1
+			elif passo == 'B': x += 1
+			elif passo == 'D': y += 1
+			elif passo == 'E': y -= 1
+			caminho_coords.append((x, y))
+
+		print(f"\n{titulo}")
 		for i in range(len(self.mapa)):
 			for j in range(len(self.mapa[0])):
 				if (i, j) == self.initial_position:
 					print('2', end=' ')
 				elif (i, j) == self.final_position:
 					print('3', end=' ')
-				elif (i, j) in caminho:
+				elif (i, j) in caminho_coords:
 					print('*', end=' ')
 				elif self.mapa[i][j] == 0:
 					print('0', end=' ')
@@ -74,45 +175,74 @@ class LabirintoAgent(spade.agent.Agent):
 					print('1', end=' ')
 			print()
 
-	def can_move(self, current_position):
-		'''
-			This function checks to which directions the agent can move from its current position.
-
-			:param current_position: a tuple (x, y) representing the current position of the agent in the maze.
-			:type current_position: tuple
-			
-			:returns: A list of directions (D, E, C, B) that the agent can move
-			:rtype: list
-
-		'''
-
-		x, y = current_position
-		new_positions = {"D": [x + 1, y], "E": [x - 1, y], "C": [x, y + 1], "B": [x, y - 1]}
-		can_move_positions = []
-		for key, pos in new_positions.items():
-			x, y = pos
-			if 0 <= x < len(self.mapa) and 0 <= y < len(self.mapa[0]):
-				if self.mapa[x][y] == 1 or self.mapa[x][y] == 3:
-					can_move_positions.append(key)
-		return can_move_positions
-
-	#não sera mais usada, eu acho
-	def get_current_position(self):
-		return self.posicao_atual
-	
-	class RecvMessage(spade.behaviour.CyclicBehaviour):
+	class TratarRequest(spade.behaviour.CyclicBehaviour):
 		async def run(self):
-			print("Waiting for messages...")
-			while True:
-				msg = await self.receive(timeout=10)
-				if msg:
-					print("Received message: {}".format(msg.body))
+			msg = await self.receive(timeout=1)
+			if msg:
+				resp = msg.make_reply()
+				direcoes_possiveis = self.agent.can_move(self.agent.posicao_atual)
+				print(f"Recebeu request. Enviando direções válidas: {direcoes_possiveis}")
+				resp.set_metadata("performative", "inform")
+				resp.body = str(direcoes_possiveis)
+				await self.send(resp)
 
-					#preciso das definições de mensagens do professor
+	class TratarSubscribe(spade.behaviour.CyclicBehaviour):
+		async def run(self):
+			msg = await self.receive(timeout=1)
+			if msg:
+				resp = msg.make_reply()
+				direcao_desejada = msg.body.strip() 
+				print(f"Recebeu pedido para mover: '{direcao_desejada}'")
+				if self.agent.move(direcao_desejada):
+					print(f"   -> OK! Nova posição: {self.agent.posicao_atual}")
+
+					if self.agent.posicao_atual == self.agent.final_position:
+						print("THE ONE PIECE IS REAL! Avisando vitória!")
+						resp.set_metadata("performative", "inform-done")
+						resp.body = "ganhou"
+					else:
+						resp.set_metadata("performative", "inform")
+						resp.body = "ok"
+				else:
+					print(f"   -> Parede fora do mapa.")
+					resp.set_metadata("performative", "inform")
+					resp.body = "nok"
+				await self.send(resp)
+
+	class TratarPropose(spade.behaviour.CyclicBehaviour):
+		async def run(self):
+			msg = await self.receive(timeout=1)
+			if msg:
+				resp = msg.make_reply()
+				resp.set_metadata("performative", "accept_propose")
+				resp.body = "caminho aceito"
+
+				partes = str(msg.body).split(',')
+				caminho_dfs = partes[0] if len(partes) > 0 else ""
+				caminho_bfs = partes[1] if len(partes) > 1 else msg.body
+
+				print("O Resolvedor enviou os resultados:")
+				print(f"Caminho DFS: {caminho_dfs} (Tam: {len(caminho_dfs)})")
+				print(f"Caminho BFS: {caminho_bfs} (Tam: {len(caminho_bfs)})")
+
+				self.agent.show_path(caminho_dfs, "Traçado da DFS")
+				self.agent.show_path(caminho_bfs, "Traçado do BFS")
+
+				print("\nEnviando accept_propose...")
+				await self.send(resp)
+				await asyncio.sleep(2)
+				print("Encerrando agente.")	
+				await self.agent.stop()
 
 async def main():
-	labirinto = LabirintoAgent("labirinto@192.168.1.74", "labirinto", verify_security=False)
+	labirinto = LabirintoAgent("mashima_lab_v5@yax.im", "senha123", verify_security=False)
 	await labirinto.start()
+	while labirinto.is_alive():
+		try:
+			await asyncio.sleep(1)
+		except KeyboardInterrupt:
+			await labirinto.stop()
+			break
 
 if __name__ == "__main__":
-	spade.run(main())
+	asyncio.run(main())
