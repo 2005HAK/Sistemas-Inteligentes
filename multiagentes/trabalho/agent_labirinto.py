@@ -35,7 +35,7 @@ class LabirintoAgent(spade.agent.Agent):
 			if self.tem_solucao(): break																		# Se nao tem solução gera um novo labirinto
 
 		self.posicao_atual = self.initial_position
-		self.show_map()
+		self.show_map()																							# Exibe o mapa no terminal
 
 		t_req = Template()
 		t_req.set_metadata("performative", "request")
@@ -124,26 +124,44 @@ class LabirintoAgent(spade.agent.Agent):
 		return can_move_positions
 
 	def show_map(self):
+		'''
+		Exibe o mapa do labirinto no terminal.
+
+		Valores:
+
+		- 0 - Parede\n
+		- 1 - Caminho\n
+		- 2 - Posição inicial\n
+		- 3 - Posição final\n
+
+		:return: none
+		'''
+
 		print("\nMAPA INICIAL")
 		for i in range(len(self.mapa)):
 			for j in range(len(self.mapa[0])):
-				if (i, j) == self.initial_position:
-					print('2', end=' ')
-				elif self.mapa[i][j] == 0:
-					print('0', end=' ')
-				elif (i, j) == self.final_position:
-					print('3', end=' ')
-				else:
-					print('1', end=' ')
+				if (i, j) == self.initial_position:	print('2', end=' ')
+				elif self.mapa[i][j] == 0:			print('0', end=' ')
+				elif (i, j) == self.final_position:	print('3', end=' ')
+				else:								print('1', end=' ')
 			print()
 
 	def move(self, direcao):
+		'''
+		Move para a nova posição se esta for valida
+
+		:param direcao: Direção para onde se moverá [C, B, D ou E]
+		:type direcao: str
+
+		:return: True se moveu para a nova posição e False caso contrário
+		'''
+
 		x, y = self.posicao_atual
-		if direcao == 'C': nova_posicao = (x - 1, y)
-		elif direcao == 'B': nova_posicao = (x + 1, y)
-		elif direcao == 'D': nova_posicao = (x, y + 1)
-		elif direcao == 'E': nova_posicao = (x, y - 1)
-		else: return False
+		if direcao == 'C':		nova_posicao = (x - 1, y)
+		elif direcao == 'B':	nova_posicao = (x + 1, y)
+		elif direcao == 'D':	nova_posicao = (x, y + 1)
+		elif direcao == 'E':	nova_posicao = (x, y - 1)
+		else:					return False
 
 		if direcao in self.can_move(self.posicao_atual):
 			self.posicao_atual = nova_posicao
@@ -154,10 +172,10 @@ class LabirintoAgent(spade.agent.Agent):
 		caminho_coords = [self.initial_position]
 		x, y = self.initial_position
 		for passo in caminho_string:
-			if passo == 'C': x -= 1
-			elif passo == 'B': x += 1
-			elif passo == 'D': y += 1
-			elif passo == 'E': y -= 1
+			if passo == 'C':	x -= 1
+			elif passo == 'B':	x += 1
+			elif passo == 'D':	y += 1
+			elif passo == 'E':	y -= 1
 			caminho_coords.append((x, y))
 
 		print(f"\n{titulo}")
