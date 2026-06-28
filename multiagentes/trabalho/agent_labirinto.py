@@ -37,18 +37,22 @@ class LabirintoAgent(spade.agent.Agent):
 		self.posicao_atual = self.initial_position
 		self.show_map()																							# Exibe o mapa no terminal
 
+		# Tamplate de requisição de movimentação
 		t_req = Template()
 		t_req.set_metadata("performative", "request")
 		self.add_behaviour(self.TratarRequest(), t_req)
-
+		
+		# Tamplate de movimentação
 		t_sub = Template()
 		t_sub.set_metadata("performative", "subscribe")
 		self.add_behaviour(self.TratarSubscribe(), t_sub)
 
+		# Template de verificação de objetivo
 		t_qif = Template()
 		t_qif.set_metadata("performative", "queryif")
 		self.add_behaviour(self.TratarQueryIf(), t_qif)
 
+		# Template de proposta de solução
 		t_prop = Template()
 		t_prop.set_metadata("performative", "propose")
 		self.add_behaviour(self.TratarPropose(), t_prop)
@@ -296,5 +300,4 @@ async def main():
 			await labirinto.stop()
 			break
 
-if __name__ == "__main__":
-	asyncio.run(main())
+if __name__ == "__main__":	asyncio.run(main())
