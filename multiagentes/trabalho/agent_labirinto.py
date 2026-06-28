@@ -9,7 +9,7 @@ class LabirintoAgent(spade.agent.Agent):
 	Classe do agente labirinto
 	'''
 
-	async def setup(self, n=3):
+	async def setup(self, n=10):
 		'''
 		Inicializa o objeto labirinto.
 
@@ -44,6 +44,10 @@ class LabirintoAgent(spade.agent.Agent):
 		t_sub = Template()
 		t_sub.set_metadata("performative", "subscribe")
 		self.add_behaviour(self.TratarSubscribe(), t_sub)
+
+		t_qif = Template()
+		t_qif.set_metadata("performative", "queryif")
+		self.add_behaviour(self.TratarQueryIf(), t_qif)
 
 		t_prop = Template()
 		t_prop.set_metadata("performative", "propose")
@@ -169,6 +173,10 @@ class LabirintoAgent(spade.agent.Agent):
 		return False
 
 	def show_path(self, caminho_string, titulo="CAMINHO FINAL NO MAPA"):
+		'''
+		Mostra o caminho proposto
+		'''
+
 		caminho_coords = [self.initial_position]
 		x, y = self.initial_position
 		for passo in caminho_string:
@@ -179,21 +187,21 @@ class LabirintoAgent(spade.agent.Agent):
 			caminho_coords.append((x, y))
 
 		print(f"\n{titulo}")
+
 		for i in range(len(self.mapa)):
 			for j in range(len(self.mapa[0])):
-				if (i, j) == self.initial_position:
-					print('2', end=' ')
-				elif (i, j) == self.final_position:
-					print('3', end=' ')
-				elif (i, j) in caminho_coords:
-					print('*', end=' ')
-				elif self.mapa[i][j] == 0:
-					print('0', end=' ')
-				else:
-					print('1', end=' ')
+				if (i, j) == self.initial_position:	print('2', end=' ')
+				elif (i, j) == self.final_position:	print('3', end=' ')
+				elif (i, j) in caminho_coords:		print('*', end=' ')
+				elif self.mapa[i][j] == 0:			print('0', end=' ')
+				else:								print('1', end=' ')
 			print()
 
 	class TratarRequest(spade.behaviour.CyclicBehaviour):
+		'''
+		Trata as requisições de movimentação, respondendo para onde pode se mover com base na posição atual
+		'''
+
 		async def run(self):
 			msg = await self.receive(timeout=1)
 			if msg:
@@ -205,6 +213,12 @@ class LabirintoAgent(spade.agent.Agent):
 				await self.send(resp)
 
 	class TratarSubscribe(spade.behaviour.CyclicBehaviour):
+		'''
+		Trata a proposta de movimentação.
+
+		Responde com ok caso consiga se mover para a direção requisitada e nok caso contrário
+		'''
+
 		async def run(self):
 			msg = await self.receive(timeout=1)
 			if msg:
@@ -214,30 +228,49 @@ class LabirintoAgent(spade.agent.Agent):
 				if self.agent.move(direcao_desejada):
 					print(f"   -> OK! Nova posição: {self.agent.posicao_atual}")
 
-					if self.agent.posicao_atual == self.agent.final_position:
-						print("THE ONE PIECE IS REAL! Avisando vitória!")
-						resp.set_metadata("performative", "inform-done")
-						resp.body = "ganhou"
-					else:
-						resp.set_metadata("performative", "inform")
-						resp.body = "ok"
+					resp.set_metadata("performative", "inform")
+					resp.body = "ok"
 				else:
 					print(f"   -> Parede fora do mapa.")
 					resp.set_metadata("performative", "inform")
 					resp.body = "nok"
 				await self.send(resp)
 
-	class TratarPropose(spade.behaviour.CyclicBehaviour):
+	class TratarQueryIf(spade.behaviour.CyclicBehaviour):
+		'''
+		Verifica se o resolvedor chegou na posição final.
+
+		Responde com done se chegou e failure caso contrário
+		'''
+
 		async def run(self):
 			msg = await self.receive(timeout=1)
 			if msg:
 				resp = msg.make_reply()
-				resp.set_metadata("performative", "accept_propose")
-				resp.body = "caminho aceito"
+				resp.set_metadata("performative", "inform")
+
+				print(f"Verificando objetivo para a posição: {self.agent.posicao_atual}")
+				if self.agent.posicao_atual == self.agent.final_position:	resp.body = "done"
+				else: 														resp.body = "failure"
+				await self.send(resp)
+
+	class TratarPropose(spade.behaviour.CyclicBehaviour):
+		'''
+		Trata as propostas enviadas pelo resolvedor.
+
+		Responde com acept_propose caso a proposta esteja correta ou failure caso contrario
+		'''
+
+		async def run(self):
+			msg = await self.receive(timeout=1)
+			if msg:
+				resp = msg.make_reply()
+				resp.set_metadata("performative", "inform")
+				resp.body = "accept_propose"												# Ta so aceitando ? e se não for uma solução?
 
 				partes = str(msg.body).split(',')
 				caminho_dfs = partes[0] if len(partes) > 0 else ""
-				caminho_bfs = partes[1] if len(partes) > 1 else msg.body
+				caminho_bfs = partes[1] if len(partes) > 1 else msg.body					# tem algo estranho aqui
 
 				print("O Resolvedor enviou os resultados:")
 				print(f"Caminho DFS: {caminho_dfs} (Tam: {len(caminho_dfs)})")
@@ -253,7 +286,8 @@ class LabirintoAgent(spade.agent.Agent):
 				await self.agent.stop()
 
 async def main():
-	labirinto = LabirintoAgent("mashima_lab_v5@yax.im", "senha123", verify_security=False)
+	#labirinto = LabirintoAgent("mashima_lab_v5@yax.im", "senha123", verify_security=False)
+	labirinto = LabirintoAgent("lab@192.168.1.74", "senha123", verify_security=False)
 	await labirinto.start()
 	while labirinto.is_alive():
 		try:
