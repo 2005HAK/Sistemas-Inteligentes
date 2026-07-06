@@ -9,7 +9,7 @@ class LabirintoAgent(spade.agent.Agent):
 	Classe do agente labirinto
 	'''
 
-	async def setup(self, n=5):
+	async def setup(self, n=3):
 		'''
 		Inicializa o objeto labirinto.
 
@@ -275,42 +275,60 @@ class LabirintoAgent(spade.agent.Agent):
 				caminho_dfs = partes[0] if len(partes) > 0 else ""
 				caminho_bfs = partes[1] if len(partes) > 1 else msg.body
 
-				pos_x, pos_y = self.agent.initial_position
-				caminho_valido = True
+				caminho_valido = self.verifica_caminho(caminho_dfs) and self.verifica_caminho(caminho_bfs)
 
-				for passo in caminho_bfs:
-					if passo == 'C':	pos_x -= 1
-					elif passo == 'B':	pos_x += 1
-					elif passo == 'D':	pos_y += 1
-					elif passo == 'E':	pos_y -= 1
-					else:
-						caminho_valido = False
-						break
-					
-					if not (0 <= pos_x < self.agent.n and 0 <= pos_y < self.agent.n) or self.agent.mapa[pos_x][pos_y] == 0:
-						caminho_valido = False
-						break
+				if caminho_valido:
+					print("O Resolvedor enviou os resultados:")
+					print(f"Caminho DFS: {caminho_dfs} (Tam: {len(caminho_dfs)})")
+					print(f"Caminho BFS: {caminho_bfs} (Tam: {len(caminho_bfs)})")
 
-				if caminho_valido and (pos_x, pos_y) == self.agent.final_position:	resp.body = "accept_propose"
-				else:																resp.body = "failure"
+					self.agent.show_path(caminho_dfs, "Traçado da DFS")
+					self.agent.show_path(caminho_bfs, "Traçado do BFS")
 
-				print("O Resolvedor enviou os resultados:")
-				print(f"Caminho DFS: {caminho_dfs} (Tam: {len(caminho_dfs)})")
-				print(f"Caminho BFS: {caminho_bfs} (Tam: {len(caminho_bfs)})")
+					print(f"\nEnviando {resp.body}...")
+					resp.body = "accept_propose"
+					await self.send(resp)
+					await asyncio.sleep(2)
+					print("Encerrando agente.")	
+					await self.agent.stop()
+				else:
+					print("O Resolvedor enviou um caminho inválido.")
+					resp.body = "failure"
+					print(f"\nEnviando {resp.body}...")
+					await self.send(resp)
+		
+		def verifica_caminho(self, caminho):
+			'''
+			Verifica se o caminho proposto é válido.
 
-				self.agent.show_path(caminho_dfs, "Traçado da DFS")
-				self.agent.show_path(caminho_bfs, "Traçado do BFS")
+			:param caminho: Caminho proposto pelo resolvedor
+			:type caminho: str
 
-				print(f"\nEnviando {resp.body}...")
-				await self.send(resp)
-				await asyncio.sleep(2)
-				print("Encerrando agente.")	
-				await self.agent.stop()
+			:return: True se o caminho for válido e False caso contrário
+			'''
+
+			pos_x, pos_y = self.agent.initial_position
+			caminho_valido = True
+
+			for passo in caminho:
+				if passo == 'C':	pos_x -= 1
+				elif passo == 'B':	pos_x += 1
+				elif passo == 'D':	pos_y += 1
+				elif passo == 'E':	pos_y -= 1
+				else:
+					caminho_valido = False
+					break
+
+				if not (0 <= pos_x < self.agent.n and 0 <= pos_y < self.agent.n) or self.agent.mapa[pos_x][pos_y] == 0:
+					caminho_valido = False
+					break
+
+			return caminho_valido and (pos_x, pos_y) == self.agent.final_position
 
 async def main():
-	labirinto = LabirintoAgent("lab@192.168.1.74", "senha123", verify_security=False)
-	#labirinto = LabirintoAgent("mashima_lab_v5@yax.im", "senha123", verify_security=False)
-	#labirinto = LabirintoAgent("lab@192.168.1.74", "senha123", verify_security=False)
+	# labirinto = LabirintoAgent("lab@192.168.1.74", "senha123", verify_security=False)
+	labirinto = LabirintoAgent("mashima_lab_v5@yax.im", "senha123", verify_security=False)
+	# labirinto = LabirintoAgent("labirinto@150.162.216.57", "senha123", verify_security=False)
 	await labirinto.start()
 	while labirinto.is_alive():
 		try:

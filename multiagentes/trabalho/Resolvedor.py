@@ -4,10 +4,10 @@ from spade.behaviour import FSMBehaviour, State																# Comportamento F
 from spade.message import Message																			# Classe para criar mensagens entre agentes
 import asyncio																								# Biblioteca para operações assíncronas, permitindo que o agente espere por mensagens sem bloquear a execução
 
-agentResolver = "resolver@192.168.1.74" 
-#agentResolver = "mashima_res_v5@yax.im"
-agentLab = "lab@192.168.1.74"
-#agentLab = "mashima_lab_v5@yax.im"
+# agentResolver = "resolver@192.168.1.74" 
+agentResolver = "mashima_res_v5@yax.im"
+# agentLab = "lab@192.168.1.74"
+agentLab = "mashima_lab_v5@yax.im"
 password = "senha123"
 
 class PedirState(State):
