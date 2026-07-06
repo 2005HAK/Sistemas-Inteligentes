@@ -9,7 +9,7 @@ class LabirintoAgent(spade.agent.Agent):
 	Classe do agente labirinto
 	'''
 
-	async def setup(self, n=10):
+	async def setup(self, n=5):
 		'''
 		Inicializa o objeto labirinto.
 
@@ -253,7 +253,7 @@ class LabirintoAgent(spade.agent.Agent):
 				resp = msg.make_reply()
 				resp.set_metadata("performative", "inform")
 
-				print(f"Verificando objetivo para a posição: {self.agent.posicao_atual}")
+				print(f"\nVerificando objetivo para a posição: {self.agent.posicao_atual}")
 				if self.agent.posicao_atual == self.agent.final_position:	resp.body = "done"
 				else: 														resp.body = "failure"
 				await self.send(resp)
@@ -262,7 +262,7 @@ class LabirintoAgent(spade.agent.Agent):
 		'''
 		Trata as propostas enviadas pelo resolvedor.
 
-		Responde com acept_propose caso a proposta esteja correta ou failure caso contrario
+		Responde com accept_propose caso a proposta esteja correta ou failure caso contrario
 		'''
 
 		async def run(self):
@@ -270,11 +270,29 @@ class LabirintoAgent(spade.agent.Agent):
 			if msg:
 				resp = msg.make_reply()
 				resp.set_metadata("performative", "inform")
-				resp.body = "accept_propose"												# Ta so aceitando ? e se não for uma solução?
 
 				partes = str(msg.body).split(',')
 				caminho_dfs = partes[0] if len(partes) > 0 else ""
-				caminho_bfs = partes[1] if len(partes) > 1 else msg.body					# tem algo estranho aqui
+				caminho_bfs = partes[1] if len(partes) > 1 else msg.body
+
+				pos_x, pos_y = self.agent.initial_position
+				caminho_valido = True
+
+				for passo in caminho_bfs:
+					if passo == 'C':	pos_x -= 1
+					elif passo == 'B':	pos_x += 1
+					elif passo == 'D':	pos_y += 1
+					elif passo == 'E':	pos_y -= 1
+					else:
+						caminho_valido = False
+						break
+					
+					if not (0 <= pos_x < self.agent.n and 0 <= pos_y < self.agent.n) or self.agent.mapa[pos_x][pos_y] == 0:
+						caminho_valido = False
+						break
+
+				if caminho_valido and (pos_x, pos_y) == self.agent.final_position:	resp.body = "accept_propose"
+				else:																resp.body = "failure"
 
 				print("O Resolvedor enviou os resultados:")
 				print(f"Caminho DFS: {caminho_dfs} (Tam: {len(caminho_dfs)})")
@@ -283,15 +301,16 @@ class LabirintoAgent(spade.agent.Agent):
 				self.agent.show_path(caminho_dfs, "Traçado da DFS")
 				self.agent.show_path(caminho_bfs, "Traçado do BFS")
 
-				print("\nEnviando accept_propose...")
+				print(f"\nEnviando {resp.body}...")
 				await self.send(resp)
 				await asyncio.sleep(2)
 				print("Encerrando agente.")	
 				await self.agent.stop()
 
 async def main():
-	#labirinto = LabirintoAgent("mashima_lab_v5@yax.im", "senha123", verify_security=False)
 	labirinto = LabirintoAgent("lab@192.168.1.74", "senha123", verify_security=False)
+	#labirinto = LabirintoAgent("mashima_lab_v5@yax.im", "senha123", verify_security=False)
+	#labirinto = LabirintoAgent("lab@192.168.1.74", "senha123", verify_security=False)
 	await labirinto.start()
 	while labirinto.is_alive():
 		try:
